@@ -51,7 +51,7 @@ function iterate<T>(stream: Stream<T, unknown>): Operation<Iterable<T>> {
   return {
     *[Symbol.iterator]() {
       let subscription = yield* stream;
-      let current = yield* subscription.next();
+      let current = yield* subscription().next();
       let stack = yield* EachStack.get();
       if (!stack) {
         stack = yield* EachStack.set([]);
@@ -97,7 +97,7 @@ iterate.next = {
       error.name = "IterationError";
       throw error;
     }
-    let current = yield* context.subscription.next();
+    let current = yield* context.subscription().next();
     delete context.stale;
     context.current = current;
     if (current.done) {
