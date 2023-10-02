@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, expectType, it } from "./suite.ts";
 
 import type { Channel } from "../mod.ts";
-import { createChannel, map, run } from "../mod.ts";
+import { createChannel, map, run, each, spawn } from "../mod.ts";
 import type { Subscription } from "../lib/types.ts";
 
 describe("Stream combinators", () => {
@@ -36,4 +36,30 @@ describe("Stream combinators", () => {
         value: "var",
       });
     }));
+
+  it("lets you filter on subscription", () => run(function*() {
+    let counter = 0;
+    let matchFoo = (item: string) => item === "foo";
+
+    let task = yield* spawn(function*() {
+      for (let result of yield* each(channel.output, matchFoo)) {
+        expect(result).toBe("foo");
+        counter += 1;
+        if (counter == 2) {
+          break;
+        }
+        yield* each.next;
+      }
+    });
+
+    yield* channel.input.send("bob");
+    yield* channel.input.send("foo");
+    yield* channel.input.send("test");
+    yield* channel.input.send("foo");
+    yield* channel.input.close("done");
+
+    yield* task;
+
+    expect(counter).toBe(2);
+  }));
 });
